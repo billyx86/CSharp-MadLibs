@@ -16,9 +16,28 @@ jobs:
         run: |
           mkdir -p MadLib/bin
           mcs -warn:4 -out:MadLib/bin/MadLib.exe MadLib/Program.cs
-      - name: Smoke test (inputs flow into the story)
+      - name: "Smoke test (story 1: inputs flow into the story)"
         run: |
-          OUT=$(printf 'pink\ndogs\nice cream\n\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n\n' | mono MadLib/bin/MadLib.exe)
           echo "$OUT" | grep -q 'Roses are pink'
           echo "$OUT" | grep -q 'dogs are blue'
           echo "$OUT" | grep -q 'I love ice cream'
+          echo "$OUT" | grep -q 'fluffy cat'
+          echo "$OUT" | grep -q 'dancing gracefully under the tree'
+      - name: "Smoke test (story 2: both templates selectable)"
+        run: |
+          OUT=$(printf '2\nsneaky\nfox\nkitchen\nchicken\nyelled\n\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'sneaky fox'
+          echo "$OUT" | grep -q 'sneaked into my kitchen'
+          echo "$OUT" | grep -q 'ate all of my chicken'
+          echo "$OUT" | grep -q 'I yelled'
+      - name: "Smoke test (EOF ends cleanly, no empty story)"
+        run: |
+          OUT=$(printf '' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'No more input - goodbye'
+          ! echo "$OUT" | grep -q 'Roses are $'
+      - name: "Smoke test (EOF mid-story 2 ends cleanly)"
+        run: |
+          OUT=$(printf '2\nsneaky\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'No more input - goodbye'
+          ! echo "$OUT" | grep -q 'disappeared into the night'
