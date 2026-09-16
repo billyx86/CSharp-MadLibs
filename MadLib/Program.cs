@@ -29,6 +29,8 @@ namespace MadLib
 
         static void Main(string[] args)
         {
+            while (true)
+            {
             // Offer two stories and let the player pick one.
             Console.WriteLine("Welcome to Mad Libs!");
             Console.WriteLine("Choose a story:");
@@ -72,7 +74,14 @@ namespace MadLib
                 Console.WriteLine(String.Format("dancing {0} under the {1}", adverb, noun));
             }
 
-            Console.ReadLine();                                                   // Prevents the program from closing on its own.
+            Console.WriteLine();
+            string playAgain = ReadWord("Play again? (y/n): ");
+            if (playAgain != "y")
+            {
+                break;
+            }
+            Console.WriteLine(); 
+            }                                                  
         }
     }
 }
