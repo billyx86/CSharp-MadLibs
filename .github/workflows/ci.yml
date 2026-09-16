@@ -31,6 +31,11 @@ jobs:
           echo "$OUT" | grep -q 'sneaked into my kitchen'
           echo "$OUT" | grep -q 'ate all of my chicken'
           echo "$OUT" | grep -q 'I yelled'
+      - name: "Smoke test (play-again loop: 'y' re-enters, 'n' exits)"
+        run: |
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\ny\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
+          [ "$(echo "$OUT" | grep -c 'Play again?')" -eq 2 ]
       - name: "Smoke test (EOF ends cleanly, no empty story)"
         run: |
           OUT=$(printf '' | mono MadLib/bin/MadLib.exe)
