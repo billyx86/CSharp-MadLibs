@@ -29,19 +29,50 @@ namespace MadLib
 
         static void Main(string[] args)
         {
-            string colour, pluralNoun, thing;                               // Define "colour", pluralNoun, and thing as empty string variables.
+            // Offer two stories and let the player pick one.
+            Console.WriteLine("Welcome to Mad Libs!");
+            Console.WriteLine("Choose a story:");
+            Console.WriteLine("  1 - Roses");
+            Console.WriteLine("  2 - The Hungry Fox");
+            string choice = ReadWord("Enter your choice (1 or 2): ");
 
-            colour = ReadWord("Enter a colour: ");                          // Read the user's input, store it in the string variable "colour".
+            if (choice == "2")
+            {
+                // Story 2: The Hungry Fox. Five words, with the animal and verb used twice.
+                string adjective = ReadWord("Enter an adjective: ");
+                string animal    = ReadWord("Enter an animal: ");
+                string place     = ReadWord("Enter a place: ");
+                string food      = ReadWord("Enter a food: ");
+                string verb      = ReadWord("Enter a verb: ");
 
-            pluralNoun = ReadWord("Enter a plural noun: ");                 // Same process, but for the plural noun.
+                Console.WriteLine();
+                Console.WriteLine(String.Format("Last night, a {0} {1}", adjective, animal));   // Use of String.Format() to put the words into the story.
+                Console.WriteLine(String.Format("sneaked into my {0}", place));
+                Console.WriteLine(String.Format("and ate all of my {0}.", food));
+                Console.WriteLine(String.Format("\"Get out!\" I {0}.", verb));
+                Console.WriteLine(String.Format("But the {0} just {1}", animal, verb));         // The same words can be used more than once.
+                Console.WriteLine("and disappeared into the night.");
+            }
+            else
+            {
+                // Story 1: Roses. The original story, with a few more slots added.
+                string colour     = ReadWord("Enter a colour: ");
+                string pluralNoun = ReadWord("Enter a plural noun: ");
+                string thing      = ReadWord("Enter a thing: ");
+                string adjective  = ReadWord("Enter an adjective: ");
+                string animal     = ReadWord("Enter an animal: ");
+                string adverb     = ReadWord("Enter an adverb: ");
+                string noun       = ReadWord("Enter a noun: ");
 
-            thing = ReadWord("Enter a thing: ");                            // Same process, but for the thing.
+                Console.WriteLine();
+                Console.WriteLine(String.Format("Roses are {0}", colour));          // Use of String.Format() to put the words into the story.
+                Console.WriteLine(String.Format("{0} are blue", pluralNoun));
+                Console.WriteLine(String.Format("I love {0}", thing));
+                Console.WriteLine(String.Format("Just like {0} {1}", adjective, animal));
+                Console.WriteLine(String.Format("dancing {0} under the {1}", adverb, noun));
+            }
 
-            Console.WriteLine(String.Format("Roses are {0}", colour));      // Use of String.Format() to input the string variable "colour" into a Console.WriteLine string. 
-            Console.WriteLine(String.Format("{0} are blue", pluralNoun));
-            Console.WriteLine(String.Format("I love {0}", thing));
-
-            Console.ReadLine();                                             // Prevents the program from closing on its own.
+            Console.ReadLine();                                                   // Prevents the program from closing on its own.
         }
     }
 }
