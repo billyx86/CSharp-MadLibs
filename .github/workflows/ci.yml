@@ -22,3 +22,8 @@ jobs:
           echo "$OUT" | grep -q 'Roses are pink'
           echo "$OUT" | grep -q 'dogs are blue'
           echo "$OUT" | grep -q 'I love ice cream'
+      - name: Smoke test (EOF ends cleanly, no empty story)
+        run: |
+          OUT=$(printf '' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'No more input - goodbye'
+          ! echo "$OUT" | grep -q 'Roses are $'
