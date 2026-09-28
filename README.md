@@ -90,9 +90,22 @@ funnier the story.
 - **End of input** (for example when the program is run from a pipe and the input
   runs out) ends the session with a friendly message instead of printing a broken,
   empty story.
+- **Invalid story choice** (anything other than `1` or `2`) prints
+  `Invalid choice - please enter 1 or 2.` and asks again, instead of silently
+  starting story 1.
+- **Empty word** (a blank or whitespace-only line) is re-asked instead of being
+  formatted into the story as a blank slot.
+- **Play again** accepts yes case-insensitively and trimmed (`y`, `Y`, `yes`,
+  ` y ` all play again); anything else ends the game.
 
 ## Tests
 
 The [CI workflow](.github/workflows/ci.yml) compiles the program with `mcs -warn:4`
-and runs smoke tests that check both stories fill their slots correctly and that
-an end-of-file input ends cleanly rather than producing an empty story.
+and runs smoke tests that check both stories fill their slots correctly, that
+an end-of-file input ends cleanly rather than producing an empty story, and
+that invalid story choices, empty words, and yes-like play-again answers are
+handled as described in [Edge cases](#edge-cases).
+
+## License
+
+GPL-3.0 — see the [LICENSE](LICENSE) file.
