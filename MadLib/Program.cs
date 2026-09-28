@@ -10,21 +10,31 @@ namespace MadLib
     {
         // Reads one word of input for the game.
         //
-        // The only difference from a plain Console.ReadLine() is that it checks
-        // for a null result. A null means there is no more input to read (end of
-        // file), which happens when the program is run from a pipe and the input
-        // runs out. Instead of formatting an empty story, it says goodbye and
-        // stops, so the user always gets a message.
+        // The differences from a plain Console.ReadLine() are:
+        //   * A null result means there is no more input to read (end of
+        //     file), which happens when the program is run from a pipe and the
+        //     input runs out. Instead of formatting an empty story, it says
+        //     goodbye and stops, so the user always gets a message.
+        //   * An empty or whitespace-only line is not a word, so it re-asks
+        //     with the same prompt instead of formatting a broken story line
+        //     like "Roses are" with nothing after it (issue #11).
         static string ReadWord(string prompt)
         {
-            Console.WriteLine(prompt);
-            string word = Console.ReadLine();
-            if (word == null)                                   // No more input (end of file), e.g. running from a pipe.
+            while (true)
             {
-                Console.WriteLine("No more input - goodbye.");   // Friendly message instead of an empty story.
-                Environment.Exit(0);                             // End the program cleanly.
+                Console.WriteLine(prompt);
+                string word = Console.ReadLine();
+                if (word == null)                                   // No more input (end of file), e.g. running from a pipe.
+                {
+                    Console.WriteLine("No more input - goodbye.");   // Friendly message instead of an empty story.
+                    Environment.Exit(0);                             // End the program cleanly.
+                }
+                if (word.Trim().Length > 0)                          // A real word - hand it back.
+                {
+                    return word;
+                }
+                Console.WriteLine("Please enter a word - it can't be empty."); // Blank line: ask again.
             }
-            return word;                                        // Store and hand back the word the user typed.
         }
 
         static void Main(string[] args)
