@@ -37,6 +37,15 @@ namespace MadLib
             }
         }
 
+        // Accepts the play-again answer. Anything yes-like (trimmed,
+        // case-insensitive, so "Y", " y " and "yes" all count) plays again;
+        // everything else ends the game (issue #10).
+        static bool IsYes(string answer)
+        {
+            string trimmed = answer.Trim().ToLowerInvariant();
+            return trimmed == "y" || trimmed == "yes";
+        }
+
         static void Main(string[] args)
         {
             while (true)
@@ -104,7 +113,7 @@ namespace MadLib
 
                 Console.WriteLine();
                 string playAgain = ReadWord("Play again? (y/n): ");
-                if (playAgain != "y")
+                if (!IsYes(playAgain))
                 {
                     break;
                 }
