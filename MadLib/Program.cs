@@ -38,7 +38,25 @@ namespace MadLib
                 Console.WriteLine("  2 - The Hungry Fox");
                 string choice = ReadWord("Enter your choice (1 or 2): ");
 
-                if (choice == "2")
+                // Only "1" and "2" start a story; anything else gets an error
+                // and the prompt again, so a typo can't start the wrong story
+                // silently (issue #9).
+                string story = null;
+                while (story == null)
+                {
+                    string trimmedChoice = choice.Trim();
+                    if (trimmedChoice == "1" || trimmedChoice == "2")
+                    {
+                        story = trimmedChoice;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid choice - please enter 1 or 2.");
+                        choice = ReadWord("Enter your choice (1 or 2): ");
+                    }
+                }
+
+                if (story == "2")
                 {
                     // Story 2: The Hungry Fox. Five words, with the animal and verb used twice.
                     string adjective = ReadWord("Enter an adjective: ");
