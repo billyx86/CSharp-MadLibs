@@ -46,3 +46,26 @@ jobs:
           OUT=$(printf '2\nsneaky\n' | mono MadLib/bin/MadLib.exe)
           echo "$OUT" | grep -q 'No more input - goodbye'
           ! echo "$OUT" | grep -q 'disappeared into the night'
+      - name: "Smoke test (invalid choice rejected, then valid re-choice works, #9)"
+        run: |
+          OUT=$(printf '3\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1 or 2.')" -eq 2 ]
+          echo "$OUT" | grep -q 'sneaky fox'
+          ! echo "$OUT" | grep -q 'Roses are'
+      - name: "Smoke test (empty word re-asked, story still fills, #11)"
+        run: |
+          OUT=$(printf '1\n\n  \npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c "Please enter a word - it can't be empty.")" -eq 2 ]
+          echo "$OUT" | grep -q 'Roses are pink'
+      - name: "Smoke test (play-again accepts Y/yes/' y ', rejects N, #10)"
+        run: |
+          # A yes-like answer (trimmed, case-insensitive) plays again -> two sessions.
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nY\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nyes\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n y \n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
+          # A no-like answer still quits after one session.
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nN\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 1 ]
