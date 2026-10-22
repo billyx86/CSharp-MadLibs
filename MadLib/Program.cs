@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MadLib
 {
@@ -31,7 +27,7 @@ namespace MadLib
                 }
                 if (word.Trim().Length > 0)                          // A real word - hand it back.
                 {
-                    return word;
+                    return word.Trim();                               // Trimmed, so leading/trailing whitespace never reaches the story (issue #13).
                 }
                 Console.WriteLine("Please enter a word - it can't be empty."); // Blank line: ask again.
             }

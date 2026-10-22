@@ -69,3 +69,25 @@ jobs:
           # A no-like answer still quits after one session.
           OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nN\n' | mono MadLib/bin/MadLib.exe)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 1 ]
+      - name: "Smoke test (whitespace-padded word is trimmed in the story, #13)"
+        run: |
+          # A word with trailing spaces used to print as 'Roses are pink␣␣'; the
+          # output line must be exactly 'Roses are pink' with no trailing blanks.
+          OUT=$(printf '1\n  pink  \ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          LINE=$(echo "$OUT" | grep '^Roses are')
+          [ "$LINE" = "Roses are pink" ]
+          # Leading whitespace is trimmed the same way.
+          OUT=$(printf '2\n sneaky \nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          LINE=$(echo "$OUT" | grep '^Last night')
+          [ "$LINE" = "Last night, a sneaky fox" ]
+      - name: "Guard (Program.cs stays minimal: no dead using directives, #14)"
+        run: |
+          # The exercise code is meant to teach C# basics with only the
+          # directives a reader needs. Fail if any of the four usings the
+          # original Visual Studio template shipped with reappear.
+          for u in System.Collections.Generic System.Linq System.Text System.Threading.Tasks; do
+            if grep -q "using $u;" MadLib/Program.cs; then
+              echo "Unexpected 'using $u;' in MadLib/Program.cs" >&2
+              exit 1
+            fi
+          done
