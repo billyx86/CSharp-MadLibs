@@ -2,12 +2,14 @@
 
 A basic [Mad Libs](https://en.wikipedia.org/wiki/Mad_Libs) game written in C#.
 You pick a story, then type in a few words — a colour, a plural noun, an animal,
-a verb, and so on — and the program fills them into a short, often funny, story
-using `String.Format()`. There are two stories to choose from, each with its own
-set of slots.
+a verb, and so on — and the program fills them into a short, often funny, story.
+There are three stories to choose from, each with its own set of slots.
 
 It was written as a beginner exercise in C#, so it is a single file with
-deliberately simple, heavily-commented code.
+deliberately simple, heavily-commented code. The stories themselves are defined
+as data (a title, a list of slots, and the template lines), so adding a new
+story is just adding another entry to the `GetStories()` array — the game loop
+does not change.
 
 ## Requirements
 
@@ -41,7 +43,8 @@ Welcome to Mad Libs!
 Choose a story:
   1 - Roses
   2 - The Hungry Fox
-Enter your choice (1 or 2): 1
+  3 - The Grumpy Dragon
+Enter your choice (1-3): 1
 Enter a colour: pink
 Enter a plural noun: dogs
 Enter a thing: ice cream
@@ -64,7 +67,8 @@ Welcome to Mad Libs!
 Choose a story:
   1 - Roses
   2 - The Hungry Fox
-Enter your choice (1 or 2): 2
+  3 - The Grumpy Dragon
+Enter your choice (1-3): 2
 Enter an adjective: sneaky
 Enter an animal: fox
 Enter a place: kitchen
@@ -79,20 +83,42 @@ But the fox just yelled
 and disappeared into the night.
 ```
 
+Example session (story 3):
+
+```
+Welcome to Mad Libs!
+Choose a story:
+  1 - Roses
+  2 - The Hungry Fox
+  3 - The Grumpy Dragon
+Enter your choice (1-3): 3
+Enter an adjective: fierce
+Enter a creature: dragon
+Enter a place: cave
+Enter a food: cheese
+Enter an exclamation: ROAR
+
+Long ago, a fierce dragon
+lived in the cave.
+It was always grumpy about its cheese.
+"ROAR!" it roared.
+and it grumbled back into the cave.
+```
+
 ## Input
 
-You are asked for a story number (`1` or `2`), then a word for each slot in that
-story. The prompts are plain text, so any word works — the funnier the word, the
-funnier the story.
+You are asked for a story number (`1`, `2`, or `3`), then a word for each slot in
+that story. The prompts are plain text, so any word works — the funnier the word,
+the funnier the story.
 
 ## Edge cases
 
 - **End of input** (for example when the program is run from a pipe and the input
   runs out) ends the session with a friendly message instead of printing a broken,
   empty story.
-- **Invalid story choice** (anything other than `1` or `2`) prints
-  `Invalid choice - please enter 1 or 2.` and asks again, instead of silently
-  starting story 1.
+- **Invalid story choice** (anything other than `1`, `2`, or `3`) prints
+  `Invalid choice - please enter 1, 2 or 3.` and asks again, instead of silently
+  starting a story.
 - **Empty word** (a blank or whitespace-only line) is re-asked instead of being
   formatted into the story as a blank slot.
 - **Play again** accepts yes case-insensitively and trimmed (`y`, `Y`, `yes`,

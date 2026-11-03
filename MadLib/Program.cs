@@ -4,6 +4,134 @@ namespace MadLib
 {
     internal class Program
     {
+        // A single blank in a story: the prompt to ask the player and the
+        // name of the word it collects. The name is written into the story
+        // template as {name}, and the same name may be used on several lines
+        // (e.g. the animal and verb in "The Hungry Fox" each appear twice).
+        internal class Slot
+        {
+            public string Prompt;   // what to ask for
+            public string Name;     // placeholder token used in the template, e.g. "adjective"
+            public string Word;     // the word the player entered (filled in while playing)
+
+            public Slot(string prompt, string name)
+            {
+                Prompt = prompt;
+                Name = name;
+            }
+        }
+
+        // A story is now pure data (issue #17): a title, the slots to fill,
+        // and the template lines that turn those words into the finished
+        // story. Each template line uses {slot name} placeholders; printing
+        // the story just swaps every {name} for the word the player typed.
+        internal class Story
+        {
+            public string Title;
+            public Slot[] Slots;
+            public string[] Lines;
+
+            public Story(string title, Slot[] slots, string[] lines)
+            {
+                Title = title;
+                Slots = slots;
+                Lines = lines;
+            }
+
+            // Ask for every slot's word, then print the finished story.
+            public void Play()
+            {
+                for (int i = 0; i < Slots.Length; i++)
+                {
+                    Slots[i].Word = ReadWord(Slots[i].Prompt);
+                }
+
+                Console.WriteLine();                       // Blank line before the story.
+                for (int i = 0; i < Lines.Length; i++)
+                {
+                    Console.WriteLine(Fill(Lines[i]));     // Swap each {name} for its word.
+                }
+            }
+
+            // Replace every {slot name} in a line with that slot's word.
+            private string Fill(string line)
+            {
+                for (int i = 0; i < Slots.Length; i++)
+                {
+                    line = line.Replace("{" + Slots[i].Name + "}", Slots[i].Word);
+                }
+                return line;
+            }
+        }
+
+        // The stories, as data (issue #16, #17). Adding a story is now just
+        // adding another entry to this array - no changes to the game loop.
+        static Story[] GetStories()
+        {
+            return new Story[]
+            {
+                new Story(
+                    "Roses",
+                    new Slot[]
+                    {
+                        new Slot("Enter a colour: ", "colour"),
+                        new Slot("Enter a plural noun: ", "pluralNoun"),
+                        new Slot("Enter a thing: ", "thing"),
+                        new Slot("Enter an adjective: ", "adjective"),
+                        new Slot("Enter an animal: ", "animal"),
+                        new Slot("Enter an adverb: ", "adverb"),
+                        new Slot("Enter a noun: ", "noun"),
+                    },
+                    new string[]
+                    {
+                        "Roses are {colour}",
+                        "{pluralNoun} are blue",
+                        "I love {thing}",
+                        "Just like {adjective} {animal}",
+                        "dancing {adverb} under the {noun}",
+                    }),
+
+                new Story(
+                    "The Hungry Fox",
+                    new Slot[]
+                    {
+                        new Slot("Enter an adjective: ", "adjective"),
+                        new Slot("Enter an animal: ", "animal"),
+                        new Slot("Enter a place: ", "place"),
+                        new Slot("Enter a food: ", "food"),
+                        new Slot("Enter a verb: ", "verb"),
+                    },
+                    new string[]
+                    {
+                        "Last night, a {adjective} {animal}",
+                        "sneaked into my {place}",
+                        "and ate all of my {food}.",
+                        "\"Get out!\" I {verb}.",
+                        "But the {animal} just {verb}",   // The same word can be used more than once.
+                        "and disappeared into the night.",
+                    }),
+
+                new Story(
+                    "The Grumpy Dragon",
+                    new Slot[]
+                    {
+                        new Slot("Enter an adjective: ", "adjective"),
+                        new Slot("Enter a creature: ", "creature"),
+                        new Slot("Enter a place: ", "place"),
+                        new Slot("Enter a food: ", "food"),
+                        new Slot("Enter an exclamation: ", "exclamation"),
+                    },
+                    new string[]
+                    {
+                        "Long ago, a {adjective} {creature}",
+                        "lived in the {place}.",
+                        "It was always grumpy about its {food}.",
+                        "\"{exclamation}!\" it roared.",
+                        "and it grumbled back into the {place}.",   // The same word can be used more than once.
+                    }),
+            };
+        }
+
         // Reads one word of input for the game.
         //
         // The differences from a plain Console.ReadLine() are:
@@ -44,68 +172,42 @@ namespace MadLib
 
         static void Main(string[] args)
         {
+            Story[] stories = GetStories();
             while (true)
             {
-                // Offer two stories and let the player pick one.
+                // Offer the stories and let the player pick one. The menu is
+                // built from the data, so it grows automatically when a story
+                // is added (issue #16).
                 Console.WriteLine("Welcome to Mad Libs!");
                 Console.WriteLine("Choose a story:");
-                Console.WriteLine("  1 - Roses");
-                Console.WriteLine("  2 - The Hungry Fox");
-                string choice = ReadWord("Enter your choice (1 or 2): ");
+                for (int i = 0; i < stories.Length; i++)
+                {
+                    Console.WriteLine("  " + (i + 1) + " - " + stories[i].Title);
+                }
+                string choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
 
-                // Only "1" and "2" start a story; anything else gets an error
-                // and the prompt again, so a typo can't start the wrong story
-                // silently (issue #9).
-                string story = null;
-                while (story == null)
+                // Only a number that points at a real story starts one; anything
+                // else gets an error and the prompt again, so a typo can't start
+                // the wrong story silently (issue #9).
+                Story chosen = null;
+                while (chosen == null)
                 {
                     string trimmedChoice = choice.Trim();
-                    if (trimmedChoice == "1" || trimmedChoice == "2")
+                    int number;
+                    if (int.TryParse(trimmedChoice, out number)
+                        && number >= 1
+                        && number <= stories.Length)
                     {
-                        story = trimmedChoice;
+                        chosen = stories[number - 1];
                     }
                     else
                     {
-                        Console.WriteLine("Invalid choice - please enter 1 or 2.");
-                        choice = ReadWord("Enter your choice (1 or 2): ");
+                        Console.WriteLine("Invalid choice - please enter 1, 2 or 3.");
+                        choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
                     }
                 }
 
-                if (story == "2")
-                {
-                    // Story 2: The Hungry Fox. Five words, with the animal and verb used twice.
-                    string adjective = ReadWord("Enter an adjective: ");
-                    string animal    = ReadWord("Enter an animal: ");
-                    string place     = ReadWord("Enter a place: ");
-                    string food      = ReadWord("Enter a food: ");
-                    string verb      = ReadWord("Enter a verb: ");
-
-                    Console.WriteLine();
-                    Console.WriteLine(String.Format("Last night, a {0} {1}", adjective, animal));   // Use of String.Format() to put the words into the story.
-                    Console.WriteLine(String.Format("sneaked into my {0}", place));
-                    Console.WriteLine(String.Format("and ate all of my {0}.", food));
-                    Console.WriteLine(String.Format("\"Get out!\" I {0}.", verb));
-                    Console.WriteLine(String.Format("But the {0} just {1}", animal, verb));         // The same words can be used more than once.
-                    Console.WriteLine("and disappeared into the night.");
-                }
-                else
-                {
-                    // Story 1: Roses. The original story, with a few more slots added.
-                    string colour     = ReadWord("Enter a colour: ");
-                    string pluralNoun = ReadWord("Enter a plural noun: ");
-                    string thing      = ReadWord("Enter a thing: ");
-                    string adjective  = ReadWord("Enter an adjective: ");
-                    string animal     = ReadWord("Enter an animal: ");
-                    string adverb     = ReadWord("Enter an adverb: ");
-                    string noun       = ReadWord("Enter a noun: ");
-
-                    Console.WriteLine();
-                    Console.WriteLine(String.Format("Roses are {0}", colour));          // Use of String.Format() to put the words into the story.
-                    Console.WriteLine(String.Format("{0} are blue", pluralNoun));
-                    Console.WriteLine(String.Format("I love {0}", thing));
-                    Console.WriteLine(String.Format("Just like {0} {1}", adjective, animal));
-                    Console.WriteLine(String.Format("dancing {0} under the {1}", adverb, noun));
-                }
+                chosen.Play();
 
                 Console.WriteLine();
                 string playAgain = ReadWord("Play again? (y/n): ");
