@@ -31,6 +31,17 @@ jobs:
           echo "$OUT" | grep -q 'sneaked into my kitchen'
           echo "$OUT" | grep -q 'ate all of my chicken'
           echo "$OUT" | grep -q 'I yelled'
+      - name: "Smoke test (story 3: The Grumpy Dragon selectable, #16)"
+        run: |
+          # Padded inputs, per the existing test convention; the {place} slot
+          # is reused on the final line, and the trimmed word must land exactly.
+          OUT=$(printf '3\n  fierce  \ndragon\ncave\ncheese\nROAR\nn\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'Long ago, a fierce dragon'
+          echo "$OUT" | grep -q 'lived in the cave.'
+          echo "$OUT" | grep -q 'It was always grumpy about its cheese.'
+          echo "$OUT" | grep -q '"ROAR!" it roared.'
+          LINE=$(echo "$OUT" | grep '^and it grumbled')
+          [ "$LINE" = "and it grumbled back into the cave." ]
       - name: "Smoke test (play-again loop: 'y' re-enters, 'n' exits)"
         run: |
           OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\ny\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
@@ -48,8 +59,10 @@ jobs:
           ! echo "$OUT" | grep -q 'disappeared into the night'
       - name: "Smoke test (invalid choice rejected, then valid re-choice works, #9)"
         run: |
-          OUT=$(printf '3\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
-          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1 or 2.')" -eq 2 ]
+          # "3" is now a valid story (#16), so the invalid choices are other
+          # out-of-range/garbage inputs: 9 and abc, then the valid re-choice 2.
+          OUT=$(printf '9\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1, 2 or 3.')" -eq 2 ]
           echo "$OUT" | grep -q 'sneaky fox'
           ! echo "$OUT" | grep -q 'Roses are'
       - name: "Smoke test (empty word re-asked, story still fills, #11)"
