@@ -202,7 +202,9 @@ namespace MadLib
                     }
                     else
                     {
-                        Console.WriteLine("Invalid choice - please enter 1, 2 or 3.");
+                        // Built from the data like the menu prompt, so the
+                        // range stays correct when a story is added (issue #19).
+                        Console.WriteLine("Invalid choice - please enter 1-" + stories.Length + ".");
                         choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
                     }
                 }
