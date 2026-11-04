@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace MadLib
 {
@@ -54,13 +55,26 @@ namespace MadLib
             }
 
             // Replace every {slot name} in a line with that slot's word.
+            //
+            // The replacement runs in a single pass over the template, so a
+            // word the player typed is never scanned again. Sequential
+            // String.Replace calls did rescan the already-filled text, and a
+            // word that contained another slot's token was rewritten by the
+            // later replacement (issue #23).
             private string Fill(string line)
             {
-                for (int i = 0; i < Slots.Length; i++)
+                return Regex.Replace(line, "\\{([A-Za-z]+)\\}", delegate(Match match)
                 {
-                    line = line.Replace("{" + Slots[i].Name + "}", Slots[i].Word);
-                }
-                return line;
+                    string name = match.Groups[1].Value;
+                    for (int i = 0; i < Slots.Length; i++)
+                    {
+                        if (Slots[i].Name == name)
+                        {
+                            return Slots[i].Word;
+                        }
+                    }
+                    return match.Value;   // Not a slot of this story: keep it verbatim.
+                });
             }
         }
 
