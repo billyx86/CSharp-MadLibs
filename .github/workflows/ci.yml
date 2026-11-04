@@ -96,6 +96,14 @@ jobs:
           OUT=$(printf '2\n sneaky \nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
           LINE=$(echo "$OUT" | grep '^Last night')
           [ "$LINE" = "Last night, a sneaky fox" ]
+      - name: "Smoke test (a player word containing a slot token is kept verbatim, #23)"
+        run: |
+          # Substitution runs over the template in one pass, so a word the
+          # player typed as '{animal}' must survive instead of being
+          # overwritten by the later animal substitution.
+          OUT=$(printf '1\n{animal}\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'Roses are {animal}'
+          echo "$OUT" | grep -q 'Just like fluffy cat'
       - name: "Guard (Program.cs stays minimal: no dead using directives, #14)"
         run: |
           # The exercise code is meant to teach C# basics with only the
