@@ -61,8 +61,11 @@ jobs:
         run: |
           # "3" is now a valid story (#16), so the invalid choices are other
           # out-of-range/garbage inputs: 9 and abc, then the valid re-choice 2.
+          # The error message is built from the story count (#19), so it reads
+          # "1-3" for the current three stories and tracks new stories
+          # automatically.
           OUT=$(printf '9\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
-          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1, 2 or 3.')" -eq 2 ]
+          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3.')" -eq 2 ]
           echo "$OUT" | grep -q 'sneaky fox'
           ! echo "$OUT" | grep -q 'Roses are'
       - name: "Smoke test (empty word re-asked, story still fills, #11)"

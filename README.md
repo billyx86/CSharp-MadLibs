@@ -107,7 +107,8 @@ and it grumbled back into the cave.
 
 ## Input
 
-You are asked for a story number (`1`, `2`, or `3`), then a word for each slot in
+You are asked for a story number (`1` up to the number of stories currently in
+`GetStories()`), then a word for each slot in
 that story. The prompts are plain text, so any word works — the funnier the word,
 the funnier the story.
 
@@ -116,9 +117,11 @@ the funnier the story.
 - **End of input** (for example when the program is run from a pipe and the input
   runs out) ends the session with a friendly message instead of printing a broken,
   empty story.
-- **Invalid story choice** (anything other than `1`, `2`, or `3`) prints
-  `Invalid choice - please enter 1, 2 or 3.` and asks again, instead of silently
-  starting a story.
+- **Invalid story choice** (anything other than a number from `1` up to the
+  number of stories) prints
+  `Invalid choice - please enter 1-3.` and asks again, instead of silently
+  starting a story. The range in the message is built from the story data, so
+  it stays correct when a story is added.
 - **Empty word** (a blank or whitespace-only line) is re-asked instead of being
   formatted into the story as a blank slot.
 - **Play again** accepts yes case-insensitively and trimmed (`y`, `Y`, `yes`,
