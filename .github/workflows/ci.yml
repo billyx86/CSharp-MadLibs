@@ -104,6 +104,20 @@ jobs:
           OUT=$(printf '1\n{animal}\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
           echo "$OUT" | grep -q 'Roses are {animal}'
           echo "$OUT" | grep -q 'Just like fluffy cat'
+      - name: "Smoke test (a story with an unknown {token} fails loudly at startup, #20)"
+        run: |
+          # Build a throwaway copy of the source with a typo'd token in The
+          # Grumpy Dragon's template ({exclamtion}, which matches no slot);
+          # running it must exit non-zero and name the bad token, instead of
+          # printing it verbatim in a story.
+          mkdir -p /tmp/badstory
+          sed 's/{exclamation}/{exclamtion}/' MadLib/Program.cs > /tmp/badstory/Program.cs
+          mcs -warn:4 -out:/tmp/badstory/MadLib.exe /tmp/badstory/Program.cs
+          if mono /tmp/badstory/MadLib.exe > /tmp/badstory/stdout.txt 2> /tmp/badstory/stderr.txt; then
+            echo "expected a non-zero exit for a story with an unknown token" >&2
+            exit 1
+          fi
+          grep -q 'exclamtion' /tmp/badstory/stderr.txt
       - name: "Guard (Program.cs stays minimal: no dead using directives, #14)"
         run: |
           # The exercise code is meant to teach C# basics with only the

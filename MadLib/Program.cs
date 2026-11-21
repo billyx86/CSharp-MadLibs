@@ -37,6 +37,44 @@ namespace MadLib
                 Title = title;
                 Slots = slots;
                 Lines = lines;
+                CheckSlots();
+            }
+
+            // Every {token} in the template must name a slot of this story,
+            // so a typo'd placeholder (issue #20) fails loudly at startup
+            // instead of printing the raw {token} in the finished story.
+            // Runs once per story as the data is built in Main; a story with
+            // an unknown token stops the program with a message naming the
+            // bad token and the story it belongs to.
+            private void CheckSlots()
+            {
+                foreach (string line in Lines)
+                {
+                    MatchCollection tokens = Regex.Matches(line, @"\{([A-Za-z]+)\}");
+                    foreach (Match token in tokens)
+                    {
+                        if (!HasSlot(token.Groups[1].Value))
+                        {
+                            Console.Error.WriteLine(
+                                "Story \"" + Title + "\" uses unknown token {" +
+                                token.Groups[1].Value + "}. Fix the template " +
+                                "or add a matching slot.");
+                            Environment.Exit(1);
+                        }
+                    }
+                }
+            }
+
+            private bool HasSlot(string name)
+            {
+                for (int i = 0; i < Slots.Length; i++)
+                {
+                    if (Slots[i].Name == name)
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             // Ask for every slot's word, then print the finished story.
