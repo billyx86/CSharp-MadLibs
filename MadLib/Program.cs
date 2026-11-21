@@ -222,6 +222,38 @@ namespace MadLib
             return trimmed == "y" || trimmed == "yes";
         }
 
+        // Finds the story a choice refers to (issue #24): a number from 1
+        // up to the story count (the canonical form), or a title, or a
+        // prefix of one, case-insensitive. Returns null when nothing
+        // matches, or when a prefix fits more than one story ("the"
+        // matches The Hungry Fox and The Grumpy Dragon) so nothing ever
+        // starts by accident.
+        static Story FindStory(Story[] stories, string choice)
+        {
+            int number;
+            if (int.TryParse(choice, out number)
+                && number >= 1
+                && number <= stories.Length)
+            {
+                return stories[number - 1];
+            }
+
+            // Not a number: the title, or the start of it, has to fit
+            // exactly one story to count.
+            string lower = choice.ToLowerInvariant();
+            Story match = null;
+            int matches = 0;
+            for (int i = 0; i < stories.Length; i++)
+            {
+                if (stories[i].Title.ToLowerInvariant().StartsWith(lower))
+                {
+                    matches++;
+                    match = stories[i];
+                }
+            }
+            return matches == 1 ? match : null;
+        }
+
         static void Main(string[] args)
         {
             Story[] stories = GetStories();
@@ -238,25 +270,21 @@ namespace MadLib
                 }
                 string choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
 
-                // Only a number that points at a real story starts one; anything
-                // else gets an error and the prompt again, so a typo can't start
-                // the wrong story silently (issue #9).
+                // A story number or a story title starts a story; anything
+                // else gets an error and the prompt again, so a typo can't
+                // start the wrong story silently (issue #9, #24).
                 Story chosen = null;
                 while (chosen == null)
                 {
-                    string trimmedChoice = choice.Trim();
-                    int number;
-                    if (int.TryParse(trimmedChoice, out number)
-                        && number >= 1
-                        && number <= stories.Length)
-                    {
-                        chosen = stories[number - 1];
-                    }
-                    else
+                    chosen = FindStory(stories, choice.Trim());
+                    if (chosen == null)
                     {
                         // Built from the data like the menu prompt, so the
-                        // range stays correct when a story is added (issue #19).
-                        Console.WriteLine("Invalid choice - please enter 1-" + stories.Length + ".");
+                        // range stays correct when a story is added
+                        // (issue #19).
+                        Console.WriteLine(
+                            "Invalid choice - please enter 1-" + stories.Length
+                            + " or a story title.");
                         choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
                     }
                 }

@@ -63,11 +63,26 @@ jobs:
           # out-of-range/garbage inputs: 9 and abc, then the valid re-choice 2.
           # The error message is built from the story count (#19), so it reads
           # "1-3" for the current three stories and tracks new stories
-          # automatically.
+          # automatically; the title option (#24) is mentioned as well.
           OUT=$(printf '9\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
-          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3.')" -eq 2 ]
+          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3 or a story title.')" -eq 2 ]
           echo "$OUT" | grep -q 'sneaky fox'
           ! echo "$OUT" | grep -q 'Roses are'
+      - name: "Smoke test (a story can be selected by title or unique prefix, #24)"
+        run: |
+          # The title (case-insensitive) or a unique prefix of it starts the
+          # right story.
+          OUT=$(printf 'The Hungry\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'sneaky fox'
+          ! echo "$OUT" | grep -q 'Roses are'
+          OUT=$(printf 'THE GRUMPY\nfierce\ndragon\ncave\ncheese\nROAR\nn\n' | mono MadLib/bin/MadLib.exe)
+          echo "$OUT" | grep -q 'Long ago, a fierce dragon'
+          # A prefix that fits more than one story ("the" matches The Hungry
+          # Fox and The Grumpy Dragon) is rejected, and the re-prompt loop
+          # still lands on the numeric choice.
+          OUT=$(printf 'the\nzzz\n1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3 or a story title.')" -eq 2 ]
+          echo "$OUT" | grep -q 'Roses are pink'
       - name: "Smoke test (empty word re-asked, story still fills, #11)"
         run: |
           OUT=$(printf '1\n\n  \npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
