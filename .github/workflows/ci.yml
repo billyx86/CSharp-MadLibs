@@ -10,15 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install Mono
-        run: sudo apt-get update -qq && sudo apt-get install -y mono-complete
-      - name: Compile
-        run: |
-          mkdir -p MadLib/bin
-          mcs -warn:4 -out:MadLib/bin/MadLib.exe MadLib/Program.cs
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build (net472 + net8.0, issue #21)
+        # Replaces the old mono-complete + mcs step: the .NET SDK builds
+        # both targets (the net472 reference assemblies come from NuGet, so
+        # no Mono install is needed) and the smoke tests below drive the
+        # net8.0 build.
+        run: dotnet build MadLib/MadLib.csproj
       - name: "Smoke test (story 1: inputs flow into the story)"
         run: |
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'Roses are pink'
           echo "$OUT" | grep -q 'dogs are blue'
           echo "$OUT" | grep -q 'I love ice cream'
@@ -26,7 +30,7 @@ jobs:
           echo "$OUT" | grep -q 'dancing gracefully under the tree'
       - name: "Smoke test (story 2: both templates selectable)"
         run: |
-          OUT=$(printf '2\nsneaky\nfox\nkitchen\nchicken\nyelled\n\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '2\nsneaky\nfox\nkitchen\nchicken\nyelled\n\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'sneaky fox'
           echo "$OUT" | grep -q 'sneaked into my kitchen'
           echo "$OUT" | grep -q 'ate all of my chicken'
@@ -35,7 +39,7 @@ jobs:
         run: |
           # Padded inputs, per the existing test convention; the {place} slot
           # is reused on the final line, and the trimmed word must land exactly.
-          OUT=$(printf '3\n  fierce  \ndragon\ncave\ncheese\nROAR\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '3\n  fierce  \ndragon\ncave\ncheese\nROAR\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'Long ago, a fierce dragon'
           echo "$OUT" | grep -q 'lived in the cave.'
           echo "$OUT" | grep -q 'It was always grumpy about its cheese.'
@@ -44,17 +48,17 @@ jobs:
           [ "$LINE" = "and it grumbled back into the cave." ]
       - name: "Smoke test (play-again loop: 'y' re-enters, 'n' exits)"
         run: |
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\ny\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\ny\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
           [ "$(echo "$OUT" | grep -c 'Play again?')" -eq 2 ]
       - name: "Smoke test (EOF ends cleanly, no empty story)"
         run: |
-          OUT=$(printf '' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'No more input - goodbye'
           ! echo "$OUT" | grep -q 'Roses are $'
       - name: "Smoke test (EOF mid-story 2 ends cleanly)"
         run: |
-          OUT=$(printf '2\nsneaky\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '2\nsneaky\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'No more input - goodbye'
           ! echo "$OUT" | grep -q 'disappeared into the night'
       - name: "Smoke test (invalid choice rejected, then valid re-choice works, #9)"
@@ -64,7 +68,7 @@ jobs:
           # The error message is built from the story count (#19), so it reads
           # "1-3" for the current three stories and tracks new stories
           # automatically; the title option (#24) is mentioned as well.
-          OUT=$(printf '9\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '9\nabc\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3 or a story title.')" -eq 2 ]
           echo "$OUT" | grep -q 'sneaky fox'
           ! echo "$OUT" | grep -q 'Roses are'
@@ -72,43 +76,43 @@ jobs:
         run: |
           # The title (case-insensitive) or a unique prefix of it starts the
           # right story.
-          OUT=$(printf 'The Hungry\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf 'The Hungry\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'sneaky fox'
           ! echo "$OUT" | grep -q 'Roses are'
-          OUT=$(printf 'THE GRUMPY\nfierce\ndragon\ncave\ncheese\nROAR\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf 'THE GRUMPY\nfierce\ndragon\ncave\ncheese\nROAR\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'Long ago, a fierce dragon'
           # A prefix that fits more than one story ("the" matches The Hungry
           # Fox and The Grumpy Dragon) is rejected, and the re-prompt loop
           # still lands on the numeric choice.
-          OUT=$(printf 'the\nzzz\n1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf 'the\nzzz\n1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Invalid choice - please enter 1-3 or a story title.')" -eq 2 ]
           echo "$OUT" | grep -q 'Roses are pink'
       - name: "Smoke test (empty word re-asked, story still fills, #11)"
         run: |
-          OUT=$(printf '1\n\n  \npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\n\n  \npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c "Please enter a word - it can't be empty.")" -eq 2 ]
           echo "$OUT" | grep -q 'Roses are pink'
       - name: "Smoke test (play-again accepts Y/yes/' y ', rejects N, #10)"
         run: |
           # A yes-like answer (trimmed, case-insensitive) plays again -> two sessions.
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nY\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nY\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nyes\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nyes\n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n y \n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\n y \n2\nsneaky\nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 2 ]
           # A no-like answer still quits after one session.
-          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nN\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\npink\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nN\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           [ "$(echo "$OUT" | grep -c 'Welcome to Mad Libs!')" -eq 1 ]
       - name: "Smoke test (whitespace-padded word is trimmed in the story, #13)"
         run: |
           # A word with trailing spaces used to print as 'Roses are pink␣␣'; the
           # output line must be exactly 'Roses are pink' with no trailing blanks.
-          OUT=$(printf '1\n  pink  \ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\n  pink  \ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           LINE=$(echo "$OUT" | grep '^Roses are')
           [ "$LINE" = "Roses are pink" ]
           # Leading whitespace is trimmed the same way.
-          OUT=$(printf '2\n sneaky \nfox\nkitchen\nchicken\nyelled\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '2\n sneaky \nfox\nkitchen\nchicken\nyelled\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           LINE=$(echo "$OUT" | grep '^Last night')
           [ "$LINE" = "Last night, a sneaky fox" ]
       - name: "Smoke test (a player word containing a slot token is kept verbatim, #23)"
@@ -116,19 +120,20 @@ jobs:
           # Substitution runs over the template in one pass, so a word the
           # player typed as '{animal}' must survive instead of being
           # overwritten by the later animal substitution.
-          OUT=$(printf '1\n{animal}\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | mono MadLib/bin/MadLib.exe)
+          OUT=$(printf '1\n{animal}\ndogs\nice cream\nfluffy\ncat\ngracefully\ntree\nn\n' | dotnet MadLib/bin/Debug/net8.0/MadLib.dll)
           echo "$OUT" | grep -q 'Roses are {animal}'
           echo "$OUT" | grep -q 'Just like fluffy cat'
       - name: "Smoke test (a story with an unknown {token} fails loudly at startup, #20)"
         run: |
           # Build a throwaway copy of the source with a typo'd token in The
-          # Grumpy Dragon's template ({exclamtion}, which matches no slot);
-          # running it must exit non-zero and name the bad token, instead of
-          # printing it verbatim in a story.
+          # Grumpy Dragon's template ({exclamtion}, which matches no slot)
+          # plus the real project file; running it must exit non-zero and
+          # name the bad token, instead of printing it verbatim in a story.
           mkdir -p /tmp/badstory
           sed 's/{exclamation}/{exclamtion}/' MadLib/Program.cs > /tmp/badstory/Program.cs
-          mcs -warn:4 -out:/tmp/badstory/MadLib.exe /tmp/badstory/Program.cs
-          if mono /tmp/badstory/MadLib.exe > /tmp/badstory/stdout.txt 2> /tmp/badstory/stderr.txt; then
+          cp MadLib/MadLib.csproj /tmp/badstory/MadLib.csproj
+          dotnet build /tmp/badstory/MadLib.csproj -f net8.0 -o /tmp/badstory/out -v q
+          if dotnet /tmp/badstory/out/MadLib.dll > /tmp/badstory/stdout.txt 2> /tmp/badstory/stderr.txt; then
             echo "expected a non-zero exit for a story with an unknown token" >&2
             exit 1
           fi
