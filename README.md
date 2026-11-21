@@ -13,27 +13,26 @@ does not change.
 
 ## Requirements
 
-The project targets **.NET Framework 4.7.2**, but on Linux/Mac it builds and runs
-under **Mono**. On Windows you can also open the `.sln` in Visual Studio.
+The project is multi-targeted: **net8.0** and **.NET Framework 4.7.2**
+(the net472 reference assemblies are restored from NuGet, so building it
+only takes the [.NET SDK](https://dotnet.microsoft.com/download) — no Mono
+needed). On Windows you can also open the `.sln` in Visual Studio.
 
-- Linux/Mac: [Mono](https://www.mono-project.com/) (provides `mcs` and `mono`)
-- Windows: .NET Framework 4.7.2 (or Visual Studio)
+- Linux/Mac/Windows: the .NET SDK (8.0 or later)
+- Windows: .NET Framework 4.7.2 (or Visual Studio) for the net472 target
 
 ## Building
 
-With Mono, from the repository root:
+With the .NET SDK, from the repository root:
 
 ```sh
-mcs -warn:4 -out:MadLib/bin/MadLib.exe MadLib/Program.cs
+dotnet build MadLib/MadLib.csproj
 ```
-
-(As with `mcs`, create the output directory first if it does not already exist —
-the CI workflow does `mkdir -p MadLib/bin` before compiling.)
 
 ## Running
 
 ```sh
-mono MadLib/bin/MadLib.exe
+dotnet MadLib/bin/Debug/net8.0/MadLib.dll
 ```
 
 Example session (story 1):
@@ -107,21 +106,23 @@ and it grumbled back into the cave.
 
 ## Input
 
-You are asked for a story number (`1` up to the number of stories currently in
-`GetStories()`), then a word for each slot in
-that story. The prompts are plain text, so any word works — the funnier the word,
-the funnier the story.
+You are asked for a story — its **number** (`1` up to the number of stories
+currently in `GetStories()`, the canonical form), or its **title**, or a
+**unique prefix** of a title, all case-insensitive — then a word for each
+slot in that story. The prompts are plain text, so any word works — the
+funnier the word, the funnier the story.
 
 ## Edge cases
 
 - **End of input** (for example when the program is run from a pipe and the input
   runs out) ends the session with a friendly message instead of printing a broken,
   empty story.
-- **Invalid story choice** (anything other than a number from `1` up to the
-  number of stories) prints
-  `Invalid choice - please enter 1-3.` and asks again, instead of silently
-  starting a story. The range in the message is built from the story data, so
-  it stays correct when a story is added.
+- **Invalid story choice** (anything other than a story number from `1` up to
+  the number of stories, or a title / unique title prefix that matches exactly
+  one story) prints
+  `Invalid choice - please enter 1-3 or a story title.` and asks again,
+  instead of silently starting a story. The range in the message is built from
+  the story data, so it stays correct when a story is added.
 - **Empty word** (a blank or whitespace-only line) is re-asked instead of being
   formatted into the story as a blank slot.
 - **Play again** accepts yes case-insensitively and trimmed (`y`, `Y`, `yes`,
@@ -129,11 +130,14 @@ the funnier the story.
 
 ## Tests
 
-The [CI workflow](.github/workflows/ci.yml) compiles the program with `mcs -warn:4`
-and runs smoke tests that check both stories fill their slots correctly, that
-an end-of-file input ends cleanly rather than producing an empty story, and
-that invalid story choices, empty words, and yes-like play-again answers are
-handled as described in [Edge cases](#edge-cases).
+The [CI workflow](.github/workflows/ci.yml) builds the program with the
+.NET SDK (`dotnet build`) and runs smoke tests that check each story fills
+its slots correctly, that a story can be picked by number or title, that a
+word containing a slot token is kept verbatim, that a story with an unknown
+token fails loudly at startup, that an end-of-file input ends cleanly rather
+than producing an empty story, and that invalid story choices, empty words,
+and yes-like play-again answers are handled as described in
+[Edge cases](#edge-cases).
 
 ## License
 

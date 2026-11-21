@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text.RegularExpressions;
 
 namespace MadLib
 {
@@ -36,6 +37,44 @@ namespace MadLib
                 Title = title;
                 Slots = slots;
                 Lines = lines;
+                CheckSlots();
+            }
+
+            // Every {token} in the template must name a slot of this story,
+            // so a typo'd placeholder (issue #20) fails loudly at startup
+            // instead of printing the raw {token} in the finished story.
+            // Runs once per story as the data is built in Main; a story with
+            // an unknown token stops the program with a message naming the
+            // bad token and the story it belongs to.
+            private void CheckSlots()
+            {
+                foreach (string line in Lines)
+                {
+                    MatchCollection tokens = Regex.Matches(line, @"\{([A-Za-z]+)\}");
+                    foreach (Match token in tokens)
+                    {
+                        if (!HasSlot(token.Groups[1].Value))
+                        {
+                            Console.Error.WriteLine(
+                                "Story \"" + Title + "\" uses unknown token {" +
+                                token.Groups[1].Value + "}. Fix the template " +
+                                "or add a matching slot.");
+                            Environment.Exit(1);
+                        }
+                    }
+                }
+            }
+
+            private bool HasSlot(string name)
+            {
+                for (int i = 0; i < Slots.Length; i++)
+                {
+                    if (Slots[i].Name == name)
+                    {
+                        return true;
+                    }
+                }
+                return false;
             }
 
             // Ask for every slot's word, then print the finished story.
@@ -54,13 +93,26 @@ namespace MadLib
             }
 
             // Replace every {slot name} in a line with that slot's word.
+            //
+            // The replacement runs in a single pass over the template, so a
+            // word the player typed is never scanned again. Sequential
+            // String.Replace calls did rescan the already-filled text, and a
+            // word that contained another slot's token was rewritten by the
+            // later replacement (issue #23).
             private string Fill(string line)
             {
-                for (int i = 0; i < Slots.Length; i++)
+                return Regex.Replace(line, "\\{([A-Za-z]+)\\}", delegate(Match match)
                 {
-                    line = line.Replace("{" + Slots[i].Name + "}", Slots[i].Word);
-                }
-                return line;
+                    string name = match.Groups[1].Value;
+                    for (int i = 0; i < Slots.Length; i++)
+                    {
+                        if (Slots[i].Name == name)
+                        {
+                            return Slots[i].Word;
+                        }
+                    }
+                    return match.Value;   // Not a slot of this story: keep it verbatim.
+                });
             }
         }
 
@@ -170,6 +222,38 @@ namespace MadLib
             return trimmed == "y" || trimmed == "yes";
         }
 
+        // Finds the story a choice refers to (issue #24): a number from 1
+        // up to the story count (the canonical form), or a title, or a
+        // prefix of one, case-insensitive. Returns null when nothing
+        // matches, or when a prefix fits more than one story ("the"
+        // matches The Hungry Fox and The Grumpy Dragon) so nothing ever
+        // starts by accident.
+        static Story FindStory(Story[] stories, string choice)
+        {
+            int number;
+            if (int.TryParse(choice, out number)
+                && number >= 1
+                && number <= stories.Length)
+            {
+                return stories[number - 1];
+            }
+
+            // Not a number: the title, or the start of it, has to fit
+            // exactly one story to count.
+            string lower = choice.ToLowerInvariant();
+            Story match = null;
+            int matches = 0;
+            for (int i = 0; i < stories.Length; i++)
+            {
+                if (stories[i].Title.ToLowerInvariant().StartsWith(lower))
+                {
+                    matches++;
+                    match = stories[i];
+                }
+            }
+            return matches == 1 ? match : null;
+        }
+
         static void Main(string[] args)
         {
             Story[] stories = GetStories();
@@ -186,25 +270,21 @@ namespace MadLib
                 }
                 string choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
 
-                // Only a number that points at a real story starts one; anything
-                // else gets an error and the prompt again, so a typo can't start
-                // the wrong story silently (issue #9).
+                // A story number or a story title starts a story; anything
+                // else gets an error and the prompt again, so a typo can't
+                // start the wrong story silently (issue #9, #24).
                 Story chosen = null;
                 while (chosen == null)
                 {
-                    string trimmedChoice = choice.Trim();
-                    int number;
-                    if (int.TryParse(trimmedChoice, out number)
-                        && number >= 1
-                        && number <= stories.Length)
-                    {
-                        chosen = stories[number - 1];
-                    }
-                    else
+                    chosen = FindStory(stories, choice.Trim());
+                    if (chosen == null)
                     {
                         // Built from the data like the menu prompt, so the
-                        // range stays correct when a story is added (issue #19).
-                        Console.WriteLine("Invalid choice - please enter 1-" + stories.Length + ".");
+                        // range stays correct when a story is added
+                        // (issue #19).
+                        Console.WriteLine(
+                            "Invalid choice - please enter 1-" + stories.Length
+                            + " or a story title.");
                         choice = ReadWord("Enter your choice (1-" + stories.Length + "): ");
                     }
                 }
